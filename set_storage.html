@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>重新初始化题库数据</title></head>
+<body>
+<h2>正在重新初始化题库...</h2>
+<script>
+(async () => {
+    try {
+        // Step 1: Clear old data
+        localStorage.removeItem('quiz_system_data');
+        localStorage.removeItem('quiz_system_stats');
+        
+        // Step 2: Load the app.js defaults by visiting main page
+        // First, load the questions JSON
+        const resp = await fetch('./计算机网络复习.json');
+        const questions = await resp.json();
+        
+        // Step 3: Load default data from app.js by creating a minimal structure
+        // We'll fetch index.html, extract and eval the DEFAULT_DATA
+        const indexResp = await fetch('./app.js');
+        const appJs = await indexResp.text();
+        
+        // Extract DEFAULT_DATA from app.js
+        const match = appJs.match(/const DEFAULT_DATA\s*=\s*(\{[\s\S]*?\n\};)/);
+        if (!match) throw new Error('Cannot find DEFAULT_DATA in app.js');
+        
+        const DEFAULT_DATA = (new Function('return ' + match[1]))();
+        const DEFAULT_STATS = { totalDone: 0, totalCorrect: 0, todayDone: 0, todayCorrect: 0,
+            todayDate: new Date().toISOString().split('T')[0], streak: 0, maxStreak: 0,
+            typeStats: { choice: { done: 0, correct: 0 }, judge: { done: 0, correct: 0 }, short: { done: 0, correct: 0 } },
+            history: [], wrongQuestions: [] };
+        
+        // Step 4: Add the new bank to default data
+        const newBank = {
+            id: 'bank_computer_network',
+            name: '计算机网络复习',
+            createdAt: new Date().toISOString(),
+            questions: questions
+        };
+        
+        DEFAULT_DATA.banks.push(newBank);
+        
+        // Step 5: Save to localStorage
+        localStorage.setItem('quiz_system_data', JSON.stringify(DEFAULT_DATA));
+        localStorage.setItem('quiz_system_stats', JSON.stringify(DEFAULT_STATS));
+        
+        const totalQ = DEFAULT_DATA.banks.reduce((sum, b) => sum + b.questions.length, 0);
+        
+        document.body.innerHTML = '<h2 style="color:green;">初始化成功!</h2>' +
+            '<p>共 ' + DEFAULT_DATA.banks.length + ' 个题库，' + totalQ + ' 道题目</p>' +
+            DEFAULT_DATA.banks.map(b => '<p>📦 ' + b.name + '（' + b.questions.length + '题）</p>').join('') +
+            '<br><a href="http://localhost:8080" style="font-size:18px;padding:12px 24px;background:#6366f1;color:white;border-radius:8px;text-decoration:none;display:inline-block;">进入刷题系统</a>';
+    } catch(e) {
+        document.body.innerHTML = '<h2 style="color:red;">失败</h2><p>' + e.message + '</p>';
+    }
+})();
+</script>
+</body></html>

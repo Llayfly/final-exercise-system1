@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能刷题系统</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <header class="header">
+        <div class="header-inner">
+            <h1 class="logo">📚 智能刷题系统</h1>
+            <nav class="nav">
+                <button class="nav-btn active" data-page="home">首页</button>
+                <button class="nav-btn" data-page="practice">开始刷题</button>
+                <button class="nav-btn" data-page="bank">题库管理</button>
+                <button class="nav-btn" data-page="stats">做题统计</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- 首页 -->
+    <section id="page-home" class="page active">
+        <div class="hero">
+            <h2>欢迎来到智能刷题系统</h2>
+            <p>支持选择题、判断题、简答题，随机刷题，自定义题库导入</p>
+            <div class="hero-stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalQuestions">0</div>
+                    <div class="stat-label">题库总量</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalDone">0</div>
+                    <div class="stat-label">已做题数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="correctRate">0%</div>
+                    <div class="stat-label">正确率</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="bankCount">0</div>
+                    <div class="stat-label">题库数量</div>
+                </div>
+            </div>
+            <button class="btn btn-primary btn-large" onclick="startQuickPractice()">立即刷题</button>
+        </div>
+
+        <!-- 快速选择刷题模式 -->
+        <div class="mode-section">
+            <h3>选择刷题模式</h3>
+            <div class="mode-grid">
+                <div class="mode-card" onclick="startPractice('random')">
+                    <div class="mode-icon">🎲</div>
+                    <h4>随机刷题</h4>
+                    <p>从所有题目中随机抽取，全面练习</p>
+                </div>
+                <div class="mode-card" onclick="startPractice('choice')">
+                    <div class="mode-icon">🔘</div>
+                    <h4>选择题</h4>
+                    <p>专项练习选择题，提升准确率</p>
+                </div>
+                <div class="mode-card" onclick="startPractice('judge')">
+                    <div class="mode-icon">✅</div>
+                    <h4>判断题</h4>
+                    <p>判断对错专项训练</p>
+                </div>
+                <div class="mode-card" onclick="startPractice('short')">
+                    <div class="mode-icon">✏️</div>
+                    <h4>简答题</h4>
+                    <p>锻炼简答题作答能力</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 刷题页面 -->
+    <section id="page-practice" class="page">
+        <div class="practice-container">
+            <!-- 刷题设置面板 -->
+            <div id="practice-setup" class="setup-panel">
+                <h2>刷题设置</h2>
+                <div class="setup-form">
+                    <div class="form-group">
+                        <label>题库选择</label>
+                        <select id="practice-bank-select">
+                            <option value="all">所有题库</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>题目类型</label>
+                        <select id="practice-type-select">
+                            <option value="all">全部类型</option>
+                            <option value="choice">选择题</option>
+                            <option value="judge">判断题</option>
+                            <option value="short">简答题</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>题目数量</label>
+                        <input type="number" id="practice-count" value="10" min="1" max="999">
+                    </div>
+                    <div class="form-group">
+                        <label>刷题模式</label>
+                        <select id="practice-mode">
+                            <option value="practice">练习模式（答完显示答案）</option>
+                            <option value="exam">考试模式（答完全部再显示）</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" onclick="beginPractice()">开始刷题</button>
+                </div>
+            </div>
+
+            <!-- 答题区域 -->
+            <div id="practice-area" class="practice-area hidden">
+                <!-- 进度条 -->
+                <div class="progress-bar-container">
+                    <div class="progress-info">
+                        <span id="progress-text">1 / 10</span>
+                        <span id="progress-type" class="badge">选择题</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill" style="width: 10%"></div>
+                    </div>
+                    <button class="btn btn-small btn-ghost" onclick="endPracticeEarly()">结束刷题</button>
+                </div>
+
+                <!-- 题目显示 -->
+                <div class="question-card">
+                    <div class="question-header">
+                        <span class="question-number" id="question-number">第 1 题</span>
+                        <span class="question-type-badge" id="question-type-badge">选择题</span>
+                    </div>
+                    <div class="question-body" id="question-body">
+                        <p class="question-text" id="question-text"></p>
+                    </div>
+
+                    <!-- 选择题选项 -->
+                    <div id="choice-options" class="choice-options hidden"></div>
+
+                    <!-- 判断题选项 -->
+                    <div id="judge-options" class="judge-options hidden">
+                        <button class="btn btn-option" onclick="answerJudge(true)">正确 ✓</button>
+                        <button class="btn btn-option" onclick="answerJudge(false)">错误 ✗</button>
+                    </div>
+
+                    <!-- 简答题输入 -->
+                    <div id="short-answer" class="short-answer hidden">
+                        <textarea id="short-input" placeholder="请输入你的答案..." rows="6"></textarea>
+                        <button class="btn btn-primary" onclick="answerShort()">提交答案</button>
+                    </div>
+                </div>
+
+                <!-- 答案解析区 -->
+                <div id="answer-panel" class="answer-panel hidden">
+                    <div class="answer-header">
+                        <span id="answer-result"></span>
+                    </div>
+                    <div class="answer-body" id="answer-body"></div>
+                    <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()">下一题</button>
+                </div>
+            </div>
+
+            <!-- 结果页面 -->
+            <div id="practice-result" class="practice-result hidden">
+                <div class="result-card">
+                    <h2>刷题完成!</h2>
+                    <div class="result-summary">
+                        <div class="result-item">
+                            <span class="result-label">总题数</span>
+                            <span class="result-value" id="result-total">0</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">正确数</span>
+                            <span class="result-value" id="result-correct">0</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">错误数</span>
+                            <span class="result-value" id="result-wrong">0</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">正确率</span>
+                            <span class="result-value" id="result-rate">0%</span>
+                        </div>
+                    </div>
+                    <div class="result-chart" id="result-chart"></div>
+                    <div class="result-actions">
+                        <button class="btn btn-primary" onclick="startQuickPractice()">再来一轮</button>
+                        <button class="btn btn-secondary" onclick="showPage('home')">返回首页</button>
+                        <button class="btn btn-ghost" onclick="reviewAnswers()">查看错题</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 题库管理页面 -->
+    <section id="page-bank" class="page">
+        <div class="bank-container">
+            <div class="bank-header">
+                <h2>题库管理</h2>
+                <div class="bank-actions">
+                    <button class="btn btn-secondary" onclick="showAddQuestionModal()">手动添加</button>
+                    <button class="btn btn-ghost" onclick="exportBank()">导出全部</button>
+                </div>
+            </div>
+
+            <!-- 文档上传区（核心入口） -->
+            <div class="doc-import-area" id="bank-upload-area">
+                <div class="doc-import-icon">📁</div>
+                <h3>上传题库文档</h3>
+                <p>拖拽 Word / Excel / CSV / TXT 文件到此处，或点击选择文件</p>
+                <p class="doc-import-hint">支持 .docx .xlsx .xls .csv .txt .json 格式，一个文件就是一个题库，整批导入</p>
+                <input type="file" id="bank-file-input" accept=".docx,.xlsx,.xls,.csv,.txt,.json">
+                <div id="bank-upload-status" class="hidden"></div>
+            </div>
+
+            <!-- 题库列表 -->
+            <div class="bank-list" id="bank-list">
+                <!-- 动态生成 -->
+            </div>
+
+            <!-- 题目列表 -->
+            <div class="questions-section" id="questions-section">
+                <div class="questions-header">
+                    <h3 id="questions-title">选择一个题库查看题目</h3>
+                    <div class="filter-bar">
+                        <select id="filter-type" onchange="filterQuestions()">
+                            <option value="all">全部类型</option>
+                            <option value="choice">选择题</option>
+                            <option value="judge">判断题</option>
+                            <option value="short">简答题</option>
+                        </select>
+                        <input type="text" id="filter-search" placeholder="搜索题目..." oninput="filterQuestions()">
+                    </div>
+                </div>
+                <div class="questions-list" id="questions-list"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 统计页面 -->
+    <section id="page-stats" class="page">
+        <div class="stats-container">
+            <h2>做题统计</h2>
+            <div class="stats-overview">
+                <div class="stat-card-large">
+                    <div class="stat-icon">📝</div>
+                    <div class="stat-info">
+                        <div class="stat-number-large" id="stat-total-done">0</div>
+                        <div class="stat-label-large">累计做题</div>
+                    </div>
+                </div>
+                <div class="stat-card-large">
+                    <div class="stat-icon">🎯</div>
+                    <div class="stat-info">
+                        <div class="stat-number-large" id="stat-accuracy">0%</div>
+                        <div class="stat-label-large">总正确率</div>
+                    </div>
+                </div>
+                <div class="stat-card-large">
+                    <div class="stat-icon">🔥</div>
+                    <div class="stat-info">
+                        <div class="stat-number-large" id="stat-streak">0</div>
+                        <div class="stat-label-large">连续正确</div>
+                    </div>
+                </div>
+                <div class="stat-card-large">
+                    <div class="stat-icon">⏰</div>
+                    <div class="stat-info">
+                        <div class="stat-number-large" id="stat-today">0</div>
+                        <div class="stat-label-large">今日做题</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 正确率趋势图 -->
+            <div class="chart-section">
+                <h3>正确率趋势</h3>
+                <div class="chart-container" id="accuracy-chart"></div>
+            </div>
+
+            <!-- 各类型统计 -->
+            <div class="type-stats-section">
+                <h3>各类型正确率</h3>
+                <div class="type-stats-grid" id="type-stats-grid"></div>
+            </div>
+
+            <!-- 错题本 -->
+            <div class="wrong-section">
+                <h3>错题本 <span class="badge" id="wrong-count">0</span></h3>
+                <div class="wrong-list" id="wrong-list">
+                    <p class="empty-text">暂无错题，继续加油！</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 导入题库模态框 -->
+    <div id="import-modal" class="modal hidden">
+        <div class="modal-overlay" onclick="closeModal('import-modal')"></div>
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>导入题库</h3>
+                <button class="modal-close" onclick="closeModal('import-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- 文档上传区（主要入口） -->
+                <div id="import-doc-panel">
+                    <p class="help-text">直接上传题库文档，系统会自动解析其中的题目。支持以下格式：</p>
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;">
+                        <div style="padding:14px;border:2px solid var(--gray-200);border-radius:8px;text-align:center;font-size:13px;">
+                            <div style="font-size:24px;margin-bottom:4px;">📄</div>
+                            <div style="font-weight:600;">Word 文档</div>
+                            <div style="color:var(--gray-400);font-size:11px;">.docx / .doc</div>
+                        </div>
+                        <div style="padding:14px;border:2px solid var(--gray-200);border-radius:8px;text-align:center;font-size:13px;">
+                            <div style="font-size:24px;margin-bottom:4px;">📊</div>
+                            <div style="font-weight:600;">Excel 表格</div>
+                            <div style="color:var(--gray-400);font-size:11px;">.xlsx / .xls / .csv</div>
+                        </div>
+                        <div style="padding:14px;border:2px solid var(--gray-200);border-radius:8px;text-align:center;font-size:13px;">
+                            <div style="font-size:24px;margin-bottom:4px;">📑</div>
+                            <div style="font-weight:600;">TXT / JSON</div>
+                            <div style="color:var(--gray-400);font-size:11px;">.txt / .json</div>
+                        </div>
+                    </div>
+                    <div class="file-upload" id="doc-upload-area" style="padding:48px;">
+                        <div class="upload-icon">📁</div>
+                        <p>点击选择文件 或 拖拽文档到此处</p>
+                        <p style="font-size:12px;color:var(--gray-400);margin-top:4px;">支持 Word、Excel、CSV、TXT、JSON 格式</p>
+                        <input type="file" id="doc-file-input" accept=".docx,.doc,.xlsx,.xls,.csv,.txt,.json">
+                    </div>
+                </div>
+
+                <!-- 高级选项（折叠） -->
+                <div style="margin-top:16px;">
+                    <button class="btn btn-ghost" style="width:100%;justify-content:center;font-size:13px;" onclick="toggleAdvancedImport()">
+                        <span id="advanced-toggle-text">展开更多导入方式 ▼</span>
+                    </button>
+                    <div id="advanced-import" class="hidden" style="margin-top:12px;padding-top:16px;border-top:1px solid var(--gray-200);">
+                        <!-- 导入方式切换 -->
+                        <div class="import-tabs">
+                            <button class="tab-btn active" onclick="switchImportTab('json')">JSON</button>
+                            <button class="tab-btn" onclick="switchImportTab('csv')">CSV</button>
+                            <button class="tab-btn" onclick="switchImportTab('paste')">文本粘贴</button>
+                        </div>
+
+                        <!-- JSON导入 -->
+                        <div id="import-json" class="import-panel active">
+                            <div class="form-group">
+                                <label>题库名称</label>
+                                <input type="text" id="import-json-name" placeholder="输入题库名称">
+                            </div>
+                            <div class="file-upload" id="json-upload-area" style="padding:30px;">
+                                <div class="upload-icon">📂</div>
+                                <p>上传 JSON 文件</p>
+                                <input type="file" id="json-file-input" accept=".json">
+                            </div>
+                        </div>
+
+                        <!-- CSV导入 -->
+                        <div id="import-csv" class="import-panel">
+                            <div class="form-group">
+                                <label>题库名称</label>
+                                <input type="text" id="import-csv-name" placeholder="输入题库名称">
+                            </div>
+                            <div class="file-upload" id="csv-upload-area" style="padding:30px;">
+                                <div class="upload-icon">📂</div>
+                                <p>上传 CSV 文件</p>
+                                <input type="file" id="csv-file-input" accept=".csv">
+                            </div>
+                        </div>
+
+                        <!-- 粘贴导入 -->
+                        <div id="import-paste" class="import-panel">
+                            <div class="form-group">
+                                <label>题库名称</label>
+                                <input type="text" id="import-paste-name" placeholder="输入题库名称">
+                            </div>
+                            <textarea id="paste-input" rows="8" oninput="resetPastePreview()" placeholder="粘贴一批题目到此处，每行一题。系统自动识别题型。"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 题库名称（文档导入用） -->
+                <div class="form-group" id="import-doc-name-group" style="margin-top:16px;">
+                    <label>题库名称</label>
+                    <input type="text" id="import-doc-name" placeholder="自动使用文件名，也可手动修改">
+                </div>
+
+                <!-- 加载状态 -->
+                <div id="import-loading" class="hidden" style="text-align:center;padding:24px;">
+                    <div style="font-size:24px;animation:spin 1s linear infinite;display:inline-block;">⚙️</div>
+                    <p style="margin-top:8px;color:var(--gray-500);">正在解析文档...</p>
+                </div>
+
+                <!-- 预览区域 -->
+                <div id="import-preview" class="hidden" style="margin-top:16px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                        <h4 style="font-size:15px;">预览解析结果 <span id="preview-count" class="badge badge-choice" style="margin-left:8px;">0 题</span></h4>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <label style="font-size:13px;display:flex;align-items:center;gap:4px;">
+                                <input type="checkbox" id="select-all-preview" checked onchange="toggleAllPreview()"> 全选
+                            </label>
+                        </div>
+                    </div>
+                    <div id="preview-list" style="max-height:300px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:8px;"></div>
+                    <p id="preview-failed" style="font-size:12px;color:var(--danger);margin-top:8px;"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('import-modal')">取消</button>
+                <button class="btn btn-primary" id="btn-parse" onclick="doParse()">预览解析</button>
+                <button class="btn btn-primary hidden" id="btn-confirm" onclick="doImport()" style="background:var(--success);">确认导入</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加题目模态框 -->
+    <div id="add-question-modal" class="modal hidden">
+        <div class="modal-overlay" onclick="closeModal('add-question-modal')"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>添加题目</h3>
+                <button class="modal-close" onclick="closeModal('add-question-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>所属题库</label>
+                    <select id="add-q-bank"></select>
+                </div>
+                <div class="form-group">
+                    <label>题目类型</label>
+                    <select id="add-q-type" onchange="toggleAddQuestionFields()">
+                        <option value="choice">选择题</option>
+                        <option value="judge">判断题</option>
+                        <option value="short">简答题</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>题目内容</label>
+                    <textarea id="add-q-text" rows="3" placeholder="输入题目内容"></textarea>
+                </div>
+                <!-- 选择题选项 -->
+                <div id="add-q-choice-fields">
+                    <div class="form-group">
+                        <label>选项 A</label>
+                        <input type="text" id="add-q-optA" placeholder="输入选项A">
+                    </div>
+                    <div class="form-group">
+                        <label>选项 B</label>
+                        <input type="text" id="add-q-optB" placeholder="输入选项B">
+                    </div>
+                    <div class="form-group">
+                        <label>选项 C</label>
+                        <input type="text" id="add-q-optC" placeholder="输入选项C（可选）">
+                    </div>
+                    <div class="form-group">
+                        <label>选项 D</label>
+                        <input type="text" id="add-q-optD" placeholder="输入选项D（可选）">
+                    </div>
+                    <div class="form-group">
+                        <label>正确答案</label>
+                        <select id="add-q-choice-answer">
+                            <option value="0">A</option>
+                            <option value="1">B</option>
+                            <option value="2">C</option>
+                            <option value="3">D</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- 判断题选项 -->
+                <div id="add-q-judge-fields" class="hidden">
+                    <div class="form-group">
+                        <label>正确答案</label>
+                        <select id="add-q-judge-answer">
+                            <option value="true">正确</option>
+                            <option value="false">错误</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- 简答题选项 -->
+                <div id="add-q-short-fields" class="hidden">
+                    <div class="form-group">
+                        <label>参考答案</label>
+                        <textarea id="add-q-short-answer" rows="3" placeholder="输入参考答案"></textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>解析（可选）</label>
+                    <textarea id="add-q-explanation" rows="2" placeholder="输入题目解析"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal('add-question-modal')">取消</button>
+                <button class="btn btn-primary" onclick="addQuestion()">添加</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 查看错题模态框 -->
+    <div id="wrong-modal" class="modal hidden">
+        <div class="modal-overlay" onclick="closeModal('wrong-modal')"></div>
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>错题回顾</h3>
+                <button class="modal-close" onclick="closeModal('wrong-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="wrong-review-list"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="practiceWrongQuestions()">错题重做</button>
+                <button class="btn btn-ghost" onclick="closeModal('wrong-modal')">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast通知 -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -303,7 +303,13 @@ function showQuestion() {
     if (q.type === 'choice') {
         showChoiceOptions(q);
     } else if (q.type === 'judge') {
-        document.getElementById('judge-options').classList.remove('hidden');
+        // Rebuild judge buttons each time to avoid stale state
+        const container = document.getElementById('judge-options');
+        container.innerHTML = `
+            <button class="btn btn-option" onclick="answerJudge(true)">正确 ✓</button>
+            <button class="btn btn-option" onclick="answerJudge(false)">错误 ✗</button>
+        `;
+        container.classList.remove('hidden');
     } else if (q.type === 'short') {
         document.getElementById('short-answer').classList.remove('hidden');
         document.getElementById('short-input').value = '';

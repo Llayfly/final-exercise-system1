@@ -718,6 +718,12 @@ body {
     cursor: pointer;
 }
 
+/* Hide file input when preview is shown, so buttons can be clicked */
+.doc-import-area.has-file input[type="file"],
+.doc-import-area.processing input[type="file"] {
+    display: none;
+}
+
 #bank-upload-status {
     margin-top: 12px;
     font-size: 13px;
